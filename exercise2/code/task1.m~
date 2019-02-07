@@ -1,0 +1,26 @@
+%% Details 
+% Author : Awais Aslam
+% Student Number : 2473910 
+% Email : awais.aslam@student.oulu.fi
+% Date : 27.09.2016
+
+%% Downsample the Speech Signal 
+
+
+
+%% Apply Pre-emphasis filter to emphasize highest frequency in the signals. 
+
+
+%% Display Pre-emphasis filter frequency response in Hz using fvtool
+
+
+%% Use melcepst to create 12 MFCC feature contours. 
+
+
+%% Plot the raw speech with MFCC contours in a subplot 
+
+
+%% Calculate the mean of each MFCC contour 
+
+
+%% Comparison with the first r

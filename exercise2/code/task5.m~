@@ -1,0 +1,18 @@
+%% Details 
+% Author : Awais Aslam
+% Student Number : 2473910 
+% Email : awais.aslam@student.oulu.fi
+% Date : 27.09.2016
+
+% Cross Validation Estimation of Recognition Performance
+
+%% Init
+
+clear
+clc 
+close all 
+load('lab2_data.mat');
+
+%% Combining Datasets 
+
+features = [training_data_proso testing_data_proso];

@@ -1,0 +1,105 @@
+%% Details 
+% Author : Awais Aslam
+% Student Number : 2473910 
+% Email : awais.aslam@student.oulu.fi
+% Date : 27.09.2016
+
+% Prosodic Features Extraction from the speech signal 
+
+%% Init
+
+clear
+clc 
+close all 
+load('lab2_data.mat');
+
+
+%% Downsample the Speech Signal from 48 KHz to 11.025 KHz
+%  p = 2297 , q = 10000 ratio = p/q = 0.2297
+
+
+
+fs = 48000;
+fsNew = 11025; 
+ratio = 1/ (fs / fsNew);
+speechResampled = resample(speech_sample, 2297, 10000);
+
+t1 = linspace(0,size(speech_sample,1)/fs,size(speech_sample,1));
+
+%% Calculate the F0 Contour of the Speech Signal 
+[F0,strength,T_ind,wflag] = getF0(speechResampled, fsNew);
+
+%% Display Raw Speech Signal and F0 Contour of the Speech Signal
+
+subplot(2,1,1);
+plot(t1,speech_sample);
+xlabel('Time (s)');
+ylabel('Amplitude');
+ylim([-1 1]);
+xlim([0 2.5]);
+title('Raw Speech Signal');
+grid on;
+
+subplot(2,1,2);
+t2 = linspace(0,2.5,249);
+plot(t2,F0);
+xlabel('Time (s)');
+ylabel('Frequency (Hz)');
+title('F0-contour of the speech signal');
+xlim([0 2.5]);
+ylim([0 400]);
+grid on;
+
+%% Extract Prosodic Features from the F0 Contour 
+
+meanF0 = mean(F0(F0 > 0));
+stdF0 = std(F0(F0 > 0));
+prctile10F0 = prctile(F0(F0 > 0),10);
+prctile90F0 = prctile(F0(F0 > 0),90);
+kurtosisF0 = kurtosis(F0(F0 > 0));
+
+
+%% Perform Voiced / Unvoiced Segmentation 
+
+tracker = (F0 > 0);
+voiceC = 0; unVoiceC = 0; frameC = 0;
+voiceSeg = zeros(1,7); unVoiceSeg = zeros(1,7);
+tracker(length(tracker) + 1) = ~tracker(length(tracker) - 1);
+voiceF = (tracker(1) == 1);
+for i = 1 : length(tracker)
+    frameC = frameC + 1;
+    if tracker(i) == 1
+        if voiceF == 0
+            unVoiceC = unVoiceC + 1;
+            unVoiceSeg(unVoiceC) = (frameC - 1) * 0.01;
+            frameC = 1;
+            voiceF = 1;
+        end   
+    elseif (tracker(i) == 0)
+        if voiceF == 1 
+            voiceC = voiceC + 1;
+            voiceSeg(voiceC) = (frameC - 1) * 0.01;
+            frameC = 1;
+            voiceF = 0;
+        end
+    end
+    
+end
+
+meanVoiceSeg = mean(voiceSeg);
+stdVoiceSeg = std(voiceSeg);
+meanUnVoiceSeg = mean(unVoiceSeg);
+stdUnVoiceSeg = std(unVoiceSeg);
+
+
+
+%% Compile Prosodic Feature Set
+
+features = zeros(1,15);
+features(1) = meanF0;
+features(2) = stdF0;
+features(3) = prctile10F0;
+features(4) = prctile90F0;
+features(5) = kurtosisF0;
+
+

@@ -1,0 +1,96 @@
+
+%% Details 
+% Author : Awais Aslam
+% Student Number : 2473910 
+% Email : awais.aslam@student.oulu.fi
+% Date : 11.10.2016
+
+%% Init 
+
+clear
+clc 
+close all
+load('lab3_data.mat');
+
+%% Combining Datasets for Cross Validation
+
+audioFeatures = [training_data_proso;testing_data_proso];
+facialFeatures = [training_data;testing_data];
+classes = [training_class;testing_class];
+personIds = [training_personID; testing_personID];
+
+%% Find Unique Person IDs
+
+uniqueIdList = unique(personIds);
+
+%% Perform Cross Validation
+
+CV = zeros(1,size(uniqueIdList,1));
+options = [];
+m1 = 20;
+m2 = 15;
+
+for i = 1 : size(uniqueIdList,1)
+    id = uniqueIdList(i);
+    
+    % Extracting Training & Testing Dataset from LBP Facial Features 
+    trainingSetFacial = facialFeatures(personIds ~= id,:);
+    testingSetFacial = facialFeatures(personIds == id,:);
+    
+    
+    options.ReducedDim = m1;                % 20 Dimensions for Facial Expressions
+    % Extract U1 subspace for facial expressions using training dataset.
+    [U1,~] = PCA(trainingSetFacial,options);
+    
+    % Map Datasets to Subspace U1 using facial expression datasets. 
+    training_data1 = (trainingSetFacial) * U1; 
+    testing_data1 = (testingSetFacial) * U1; 
+    
+    % For facial expression datasets (Compute the Z-score normalized dataset)
+    meanFacial = mean(training_data1,1);
+    stdFacial = std(training_data1,0,1);
+    training_data1_norm = (training_data1 - repmat(meanFacial,size(training_data1,1) ./ stdFacial;
+    testing_data1_norm = (testing_data1 - meanFacial) ./ stdFacial;
+    
+    % Extracting Training & Testing Dataset from Speech Prosody Features 
+    trainingSetAudio = audioFeatures(personIds ~= id,:);
+    testingSetAudio = audioFeatures(personIds == id,:);
+    
+    %Extract U2 subspace for audio features using training dataset. 
+    options.ReducedDim = m2;               % 15 Dimesions for audio features 
+    [U2,~] = PCA(trainingSetAudio,options);
+   
+    training_data2 = (trainingSetAudio) * U2;
+    testing_data2 = (testingSetAudio) * U2; 
+   
+   % For audio features datasets
+    meanAudio = repmat(mean(training_data2,1),size(trainingSetAudio,1),1);
+    stdAudio = repmat(std(training_data2,0,1),size(trainingSetAudio,1),1);
+    training_data2_norm = (training_data2 - meanAudio) ./ stdAudio;
+    testing_data2_norm = (testing_data2 - meanAudio) ./ stdAudio;
+    
+    
+    trainingClass = classes(personIds ~= id,:);
+    testingClass = classes(personIds == id,:);
+    
+    combinedTrainingSet = [training_data1_norm training_data2_norm];
+    combinedTestingSet = [testing_data1_norm testing_data2_norm];
+    
+    svmStruct = svmtrain(combinedTrainingSet,trainingClass, 'kernel_function', 'linear');
+    
+    yTrain = svmclassify(svmStruct, combinedTrainingSet);
+    yTest = svmclassify(svmStruct, combinedTestingSet);
+    
+    [accTrain,~,~] = checkClassifierPerformance(yTrain, trainingClass, false, '');
+    [accTest,~, ~] = checkClassifierPerformance(yTest, testingClass, false, '');
+   
+    CV(i) = accTest;   
+    
+    break;
+end
+
+disp('Ten Fold Cross Validation Score');
+CV
+
+disp(['Mean ' num2str(mean(CV))]);
+disp(['Standard Deviation ' num2str(std(CV))]);
